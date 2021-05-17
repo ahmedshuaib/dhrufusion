@@ -8,6 +8,12 @@ use TFMSoftware\DhruFusion\Models\DhruFusion;
 
 class ApiKeyController extends Controller
 {
+
+    public function __construct()
+    {
+        
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -28,7 +34,6 @@ class ApiKeyController extends Controller
     public function store(Request $request)
     {
         $this->validate($request, [
-            'username' => 'required|unique:dhru_fusions,username',
             'api_key' => 'required|unique:dhru_fusions,api_key'
         ]);
 
