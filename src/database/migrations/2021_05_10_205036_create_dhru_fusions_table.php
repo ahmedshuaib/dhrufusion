@@ -18,6 +18,7 @@ class CreateDhruFusionsTable extends Migration
             $table->unsignedBigInteger('user_id');
             $table->string('username')->unique();
             $table->string('api_key', 54)->unique();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
