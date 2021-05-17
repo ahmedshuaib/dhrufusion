@@ -27,9 +27,9 @@ class TFMDhruServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
 
         $this->publishes([
-            __DIR__ . '/Http/Controllers' => 'Dhru/Http/Controllers',
+            // __DIR__ . '/Http/Controllers' => 'Dhru/Http/Controllers',
             __DIR__ . '/dhru/index.php' => 'public/api/dhru/index.php',
-            __DIR__ . '/routes/web.php' => 'Dhru/routes/web.php',
+            // __DIR__ . '/routes/web.php' => 'Dhru/routes/web.php',
         ]);
     }
 }
