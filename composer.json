@@ -15,5 +15,13 @@
         "psr-4": {
             "TFMSoftware\\DhruFusion\\" : "src/"
         }
+    },
+
+    "extra": {
+        "laravel": {
+            "providers": [
+                "TFMSoftware\\DhruFusion\\TFMDhruServiceProvider"
+            ]
+        }
     }
 }
