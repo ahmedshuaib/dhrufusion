@@ -1,0 +1,19 @@
+{
+    "name": "tfmsoftware/dhru",
+    "description": "DhruFusionApi Integration",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "ahmedshuaib",
+            "email": "ahmedshuaib46@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "TFMSoftware\\DhruFusion\\" : "src/"
+        }
+    }
+}
