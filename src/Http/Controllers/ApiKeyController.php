@@ -82,7 +82,7 @@ class ApiKeyController extends Controller
         ]);
 
         $fusion = DhruFusion::findorfail($id);
-        $fusion->api_key = $request->input('api_key');
+        $fusion->api_key = $request->api_key;
         $fusion->is_active = $request->is_active;
         $fusion->save();
         return response()->json(['msg' => 'Api key successfully updated'], 200);
