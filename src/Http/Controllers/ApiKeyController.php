@@ -22,8 +22,18 @@ class ApiKeyController extends Controller
      */
     public function index()
     {
-        $infos = DhruFusion::query();
-        return $infos;
+        $infos = DhruFusion::with('user');
+        return datatables()->eloquent($infos)->setTransformer(function($infos) {
+            return [
+                'api_id' => $infos->id,
+                'access_key' => $infos->api_key,
+                'uid' => $infos->user_id,
+                'username' => $infos->username,
+                'status' => $infos->is_active,
+                'created_at' => $infos->created_at,
+                'updated_at' => $infos->updated_at
+            ];
+        })->toJson();
     }
 
     /**
