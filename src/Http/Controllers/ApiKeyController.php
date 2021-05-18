@@ -11,7 +11,8 @@ class ApiKeyController extends Controller
 
     public function __construct()
     {
-        
+        $this->middleware('can:api_view', ['only'  => ['index', 'show']]);
+        $this->middleware('can:api_manage', ['only' => ['store', 'update', 'destroy']]);
     }
 
     /**
