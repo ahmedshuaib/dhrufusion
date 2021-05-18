@@ -78,7 +78,7 @@ class ApiKeyController extends Controller
     public function update(Request $request, $id)
     {
         $this->validate($request, [
-            'api_key' => 'required|unique:dhru_fusions,api_key'
+            'api_key' => 'required|max:35'
         ]);
 
         $fusion = DhruFusion::findorfail($id);
