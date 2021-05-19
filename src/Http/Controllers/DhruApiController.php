@@ -6,55 +6,83 @@ use App\Http\Controllers\Controller;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
 use TFMSoftware\DhruFusion\Models\DhruFusion;
+use App\Helper\Option\OptionHelperFacades as opt;
 
 class DhruApiController extends Controller
 {
-    public function dhru_login(Request $request) {
+
+    public $site_url = "http://test.ahmedshuaib.com";
+
+    public function dhru_login(Request $request)
+    {
 
         $request->validate([
             'username' => 'required',
             'key'    => 'required'
         ]);
 
-        $key = DhruFusion::findorfail($request->key);
+        $key = DhruFusion::where('api_key', $request->key)->firstorfail();
 
         Auth::loginUsingId($key->user_id);
 
-        return Auth::check();
+        if (auth()->user()->is_admin || auth()->user()->is_system) {
+            $msg = [
+                'success' => true,
+            ];
+        } else {
+            $msg = [
+                'success' => false
+            ];
+        }
+
+        return response($msg, 200);
     }
 
-    public function account_info() {
-        return Auth::user();
+    public function account_info(Request $request)
+    {
+
+        $this->dhru_login($request);
+
+
+        return response()->json([
+            'account' => [
+                'name' => auth()->user()->username,
+                'email' => auth()->user()->email,
+                'currency' => opt::system()['currency_suffix'],
+                'balance' => auth()->user()->balance . ' ' . opt::system()['currency_suffix']
+            ]
+        ]);
     }
 
-    public function license_order(Request $request) {
+    public function email_to_id(Request $request)
+    {
+        $request->validate([
+            'email' => 'required'
+        ]);
+        $user = User::where('email', $request->email)->firstorfail();
+        return response(['uid' => $user->id], 200);
+    }
+
+    public function license_order(Request $request)
+    {
 
         $request->validate([
             'package_id' => 'required',
             'email' => 'required'
         ]);
 
+        $request->is_active = true;
+
         $user = User::where('email', $request->email)->firstorfail();
-
-        $response = Http::post('https://www.tfmtool.com/admin/api/orders', [
-            'package_id' => $request->package_id,
-            'user_id'   => $user->id,
-        ]);
-
-        return $response;
     }
 
-    public function credit_order(Request $request) {
+    public function credit_order(Request $request)
+    {
 
         $request->validate([
             'amount' => 'required',
             'email' => 'required'
         ]);
-
     }
-
-
-
 }

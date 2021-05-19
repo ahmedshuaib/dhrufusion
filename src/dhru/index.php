@@ -1,90 +1,74 @@
 <?php
 
-namespace TFMSoftware\DhruFusion\dhru;
-use Illuminate\Support\Facades\Http;
-
-
 session_name("DHRUFUSION");
 session_set_cookie_params(0, "/", null, false, true);
 session_start();
 error_reporting(0);
-
-$api_version = '6.1';
-
-foreach($_POST as $k => $v) {
+$apiversion = '6.1';
+foreach ($_POST as $k => $v) {
     ${$k} = filter_var($v, FILTER_SANITIZE_STRING);
 }
 
+$site_url = "http://test.ahmedshuaib.com";
 
-$api_result = array();
 
-
-if($parameters) {
+$apiresults = array();
+if ($parameters) {
     $parameters = json_decode(base64_decode($parameters), true);
 }
 
-if($user = validate_auth($username, $apikey)) {
+
+if ($User = validateAuth($username, $apiaccesskey)) {
+
+    $data = array(
+        'username' => $username,
+        'key'    => $apiaccesskey
+    );
+
     switch ($action) {
 
         case "accountinfo":
-            $AccoutInfo['credit'] = 1000;
-            $AccoutInfo['mail'] = 'fusionapistandards@dhrusoft.com';
-            $AccoutInfo['currency'] = 'USD'; /* Currency code */
+            $resp = post_request($site_url . '/system/api/dhru/account', $data);
+            $resp = json_decode($resp, true)['account'];
+            $AccoutInfo['credit'] = $resp['balance'];
+            $AccoutInfo['mail'] = $resp['email'];
+            $AccoutInfo['currency'] = $resp['currency']; /* Currency code */
             $apiresults['SUCCESS'][] = array('message' => 'Your Accout Info', 'AccoutInfo' => $AccoutInfo);
             break;
 
         case "imeiservicelist":
+            $resp = post_request($site_url . '/system/api/packages', $data);
+            $resp = json_decode($resp, true)['packages'];
+
             $ServiceList = NULL;
             $Group = 'Service Group';
             $ServiceList[$Group]['GROUPNAME'] = $Group;
-            $ServiceList[$Group]['GROUPTYPE'] = 'IMEI'; // IMEI OR SERVER OR REMOTE
+            $ServiceList[$Group]['GROUPTYPE'] = 'SERVER'; // IMEI OR SERVER OR REMOTE
 
-            /* LOOP of service by group*/ {
-                $SERVICEID = 1;
-                $ServiceList[$Group]['GROUPTYPE'] = 'IMEI';  //IMEI OR SERVER
+            foreach ($resp as $key => $val) {
+                $SERVICEID = $val['id'];
+                $ServiceList[$Group]['GROUPTYPE'] = 'SERVER';  //IMEI OR SERVER
                 $ServiceList[$Group]['SERVICES'][$SERVICEID]['SERVICEID'] = $SERVICEID;
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['SERVICETYPE'] = 'IMEI'; // IMEI OR SERVER OR REMOTE
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['SERVICENAME'] = 'Service Name';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['CREDIT'] = 1;
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['INFO'] = utf8_encode('Service Information ');
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['TIME'] = '1-2 Minutes';
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['SERVICETYPE'] = 'SERVER'; // IMEI OR SERVER OR REMOTE
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['SERVICENAME'] = $val['package_name'];
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['CREDIT'] = $val['price'];
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['INFO'] = utf8_encode($val['package_description']);
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['TIME'] = 'Instant';
 
                 /*QNT*/
                 $ServiceList[$Group]['SERVICES'][$SERVICEID]['QNT'] = 1;
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['QNTOPTIONS'] = '10,20,50';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['MINQNT'] = ''; /* QNTOPTIONS OR MIN/MAX QNT*/
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['MAXQNT'] = '';
-
-
-                /* Other Fields if required only */
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.Network'] = 'Required';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.Mobile'] = 'Required';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.Provider'] = 'Required';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.PIN'] = 'Required';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.KBH'] = 'Required';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.MEP'] = 'Required';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.PRD'] = 'Required';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.Type'] = 'Required';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.Reference'] = 'Required';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.Locks'] = 'Required';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.SN'] = 'Required';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.SecRO'] = 'Required';
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['QNTOPTIONS'] = '1';
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['MINQNT'] = '1'; /* QNTOPTIONS OR MIN/MAX QNT*/
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['MAXQNT'] = '1';
 
                 /*Custom Fields*/
                 $CUSTOM = array(); {
                     $CUSTOM[0]['type'] = 'serviceimei';
-                    $CUSTOM[0]['fieldname'] = 'USERNAME';
+                    $CUSTOM[0]['fieldname'] = 'email';
                     $CUSTOM[0]['fieldtype'] = 'text'; /* text dropdown radio textarea tickbox datepicker time */
                     $CUSTOM[0]['description'] = '';
                     $CUSTOM[0]['fieldoptions'] = '';
                     $CUSTOM[0]['required'] = 1;
-
-                    $CUSTOM[1]['type'] = 'serviceimei';
-                    $CUSTOM[1]['fieldname'] = 'USERTYPE';
-                    $CUSTOM[1]['fieldtype'] = 'dropdown'; /* text dropdown radio textarea tickbox datepicker time */
-                    $CUSTOM[1]['description'] = '';
-                    $CUSTOM[1]['fieldoptions'] = 'New,Existing'; /*If field type id radio or DropDown*/
-                    $CUSTOM[1]['required'] = 1;
                 }
                 $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.Custom'] = $CUSTOM;
             }
@@ -93,83 +77,97 @@ if($user = validate_auth($username, $apikey)) {
             break;
 
         case "placeimeiorder":
-            $ServiceId = (int)$parameters['ID'];
-            $CustomField = json_decode(base64_decode($parameters['customfield']), true);
 
-            if (validateCredits($User, $credit)) {
+            $xml_array = simplexml_load_string($_POST['parameters']); //FIRST LOAD XML
+            $json_enc = json_encode($xml_array); //CONVERT TO JSON
+            $resp = json_decode($json_enc, true); //DECODE JSON
+            $ServiceId = $resp['ID']; //SERVICE ID
+            $CustomField = json_decode(base64_decode($resp['CUSTOMFIELD']), true); //CUSTOMFIELD
 
+            $field = array(
+                'email' => $CustomField['email']
+            );
+
+            $resp = post_request($site_url . '/system/api/dhru/uid', $field);
+            $resp = json_decode($resp, true);
+
+            $field = array(
+                'user_id' => $resp['uid'],
+                'package_id' => $ServiceId,
+                'is_active' => 1,
+            );
+
+            $resp = post_request($site_url . '/system/api/order', $field);
+            $resp = json_decode($resp, true);
+
+            if ($resp['status'] == true) {
                 /*  Process order and ger order reference id*/
-                $order_reff_id = 2323;
-
-                $apiresults['SUCCESS'][] = array('MESSAGE' => 'Order received', 'REFERENCEID' => $order_reff_id);
+                $order_reff_id = $resp['refid'];
+                $apiresults['SUCCESS'][] = array('MESSAGE' => $resp['msg'], 'REFERENCEID' => $order_reff_id);
             } else {
-                $apiresults['ERROR'][] = array('MESSAGE' => 'Not enough credits');
-            }
-            break;
-
-        case "placeimeiorderbulk":
-            /* Other Fusion 31- 59 api support for bulk submit */
-            /*Validate each orders in loop */
-            foreach ($parameters as $bulkReqId => $OrdersDetails) {
-
-                $ServiceId = (int)$OrdersDetails['ID'];
-                $CustomField = json_decode(base64_decode($OrdersDetails['customfield']), true);
-
-                if (validateCredits($User, $credit)) {
-                    /*  Process order and ger order reference id*/
-                    $order_reff_id = 2323;
-                    $apiresults[$bulkReqId]['SUCCESS'][] = array('MESSAGE' => 'Order received', 'REFERENCEID' => $order_reff_id);
-                } else {
-                    $apiresults[$bulkReqId]['ERROR'][] = array('MESSAGE' => 'Not enough credits');
-                }
+                $apiresults['ERROR'][] = array('MESSAGE' => $resp['message']);
             }
             break;
 
         case "getimeiorder":
             $OrderID = (int)$parameters['ID'];
             $apiresults['SUCCESS'][] = array(
-                'STATUS' => 1, /* 0 - New , 1 - InProcess, 3 - Reject(Refund), 4- Available(Success)  */
+                'STATUS' => 4, /* 0 - New , 1 - InProcess, 3 - Reject(Refund), 4- Available(Success)  */
                 'CODE' => 'CODE'
             );
-            break;
-
-        case "getimeiorderbulk":
-            /* Other Fusion 31- 59 api support for bulk get */
-            /*Validate each orders in loop */
-            foreach ($parameters as $bulkReqId => $OrdersDetails) {
-                $OrderID = (int)$OrdersDetails['ID'];
-                $apiresults[$bulkReqId]['SUCCESS'][] = array(
-                    'STATUS' => 3, /* 0 - New , 1 - InProcess, 3 - Reject(Refund), 4- Available(Success)  */
-                    'CODE' => 'CODE'
-                );
-            }
             break;
 
         default:
             $apiresults['ERROR'][] = array('MESSAGE' => 'Invalid Action');
     }
-}
-else {
+} else {
     $apiresults['ERROR'][] = array('MESSAGE' => 'Authentication Failed');
 }
 
 
 
-function validate_auth($username, $api_key) {
-    request()->validate([
-        'username' => 'required',
-        'apiaccesskey' => 'required'
-    ]);
+function validateAuth($username, $apiKey)
+{
+    $data = array(
+        'username' => $username,
+        'key'   => $apiKey
+    );
 
-    return (true);
+    $resp = post_request('http://test.ahmedshuaib.com/system/api/dhru/login', $data);
+
+    $result = json_decode($resp, true);
+    if ($result['success']) return (true);
+    else return (false);
 }
-
 
 function validateCredits($username, $credit)
 {
     return true;
 }
 
+function post_request($url, $data)
+{
+    $crul = curl_init();
+    curl_setopt($crul, CURLOPT_HEADER, false);
+    curl_setopt($crul, CURLOPT_HTTPHEADER, array(
+        'Accept: application/json'
+    ));
+    curl_setopt($crul, CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
+    curl_setopt($crul, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($crul, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($crul, CURLOPT_URL, $url);
+    curl_setopt($crul, CURLOPT_POST, true);
+    curl_setopt($crul, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($crul, CURLOPT_POSTFIELDS, $data);
+    $response = curl_exec($crul);
+    if (curl_errno($crul) != CURLE_OK) {
+        echo curl_error($crul);
+        curl_close($crul);
+    } else {
+        curl_close($crul);
+        return $response;
+    }
+}
 
 if (count($apiresults)) {
     header("X-Powered-By: DHRU-FUSION");
