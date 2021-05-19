@@ -16,7 +16,7 @@ Route::namespace(Controllers::class)->prefix('admin')
 
 Route::post('login',  'DhruApiController@dhru_login')->middleware(['api', 'guest:admin']);
 
-Route::namespace(Controller::class)->prefix('/dhru')
+Route::namespace(Controllers::class)->prefix('/dhru')
 ->middleware(['api', 'auth:admin', 'admin', 'verified'])->group(function() {
     Route::post('account', 'DhruApiController@account_info');
     Route::post('order_license', 'DhruApiController@license_order');
