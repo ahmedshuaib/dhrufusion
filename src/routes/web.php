@@ -7,16 +7,16 @@ use TFMSoftware\DhruFusion\Http\Controllers;
 use TFMSoftware\DhruFusion\Http\Controllers\DhruApiController;
 
 Route::namespace(Controllers::class)->prefix('admin')
-->middleware(['web', 'auth:admin', 'admin', 'verified'])->group(function () {
+->middleware(['web', 'auth:admin', 'admin', 'verified'])->group(function() {
     //api key genrate and modify here
     Route::apiResource('/dhru/api/key', ApiKeyController::class);
 
 });
 
 
-Route::post('api/dhru/login',  'DhruApiController@dhru_login')
-->namespace(Controllers::class)
-->middleware(['api', 'guest:admin']);
+Route::namespace(Controllers::class)->middleware(['api', 'guest:admin'])->group(function() {
+    Route::post('api/dhru/login',  'DhruApiController@dhru_login');
+});
 
 Route::namespace(Controllers::class)->prefix('/dhru')
 ->middleware(['api', 'auth:admin', 'admin', 'verified'])->group(function() {
