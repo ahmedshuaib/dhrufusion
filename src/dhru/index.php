@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * DHRU Fusion api standards V6.1
+ */
+
 session_name("DHRUFUSION");
 session_set_cookie_params(0, "/", null, false, true);
 session_start();
@@ -11,12 +15,16 @@ foreach ($_POST as $k => $v) {
 
 $site_url = "http://test.ahmedshuaib.com";
 
-
 $apiresults = array();
 if ($parameters) {
     $parameters = json_decode(base64_decode($parameters), true);
 }
 
+
+//extra work
+$xml_array = simplexml_load_string($_POST['parameters']); //FIRST LOAD XML
+$json_enc = json_encode($xml_array); //CONVERT TO JSON
+$tfm_param = json_decode($json_enc, true); //DECODE JSON
 
 if ($User = validateAuth($username, $apiaccesskey)) {
 
@@ -78,17 +86,15 @@ if ($User = validateAuth($username, $apiaccesskey)) {
 
         case "placeimeiorder":
 
-            $xml_array = simplexml_load_string($_POST['parameters']); //FIRST LOAD XML
-            $json_enc = json_encode($xml_array); //CONVERT TO JSON
-            $resp = json_decode($json_enc, true); //DECODE JSON
-            $ServiceId = $resp['ID']; //SERVICE ID
-            $CustomField = json_decode(base64_decode($resp['CUSTOMFIELD']), true); //CUSTOMFIELD
+            $ServiceId = $tfm_param['ID']; //SERVICE ID
+            $CustomField = json_decode(base64_decode($tfm_param['CUSTOMFIELD']), true); //CUSTOMFIELD
 
             $field = array(
                 'email' => $CustomField['email']
             );
 
             $resp = post_request($site_url . '/system/api/dhru/uid', $field);
+
             $resp = json_decode($resp, true);
 
             $field = array(
@@ -97,7 +103,10 @@ if ($User = validateAuth($username, $apiaccesskey)) {
                 'is_active' => 1,
             );
 
-            $resp = post_request($site_url . '/system/api/order', $field);
+            $field = array_merge($field, $data);
+
+            $resp = post_request($site_url . '/system/api/dhru/order_license', $field);
+
             $resp = json_decode($resp, true);
 
             if ($resp['status'] == true) {
@@ -105,18 +114,34 @@ if ($User = validateAuth($username, $apiaccesskey)) {
                 $order_reff_id = $resp['refid'];
                 $apiresults['SUCCESS'][] = array('MESSAGE' => $resp['msg'], 'REFERENCEID' => $order_reff_id);
             } else {
-                $apiresults['ERROR'][] = array('MESSAGE' => $resp['message']);
+                $msg = empty($resp['message']) ? $resp['msg'] : $resp['message'];
+                $apiresults['ERROR'][] = array('MESSAGE' => $msg);
             }
             break;
 
         case "getimeiorder":
-            $OrderID = (int)$parameters['ID'];
-            $apiresults['SUCCESS'][] = array(
-                'STATUS' => 4, /* 0 - New , 1 - InProcess, 3 - Reject(Refund), 4- Available(Success)  */
-                'CODE' => 'CODE'
-            );
-            break;
+            $OrderID = $tfm_param['ID']; //order id
 
+            $field = array(
+                'order_id' => $OrderID,
+            );
+
+            $field = array_merge($data, $field);
+
+            $resp = post_request($site_url . '/system/api/dhru/order', $field);
+
+            $resp = json_decode($resp, true);
+
+            $code = 1;
+            $code = $resp['status'] == true ? $resp['code'] : 3;
+            $msg = $resp['status'] == true ? $resp['msg'] : 'Try again';
+
+            $apiresults['SUCCESS'][] = array(
+                'STATUS' => $code, /* 0 - New , 1 - InProcess, 3 - Reject(Refund), 4- Available(Success)  */
+                'CODE' => $msg
+            );
+
+            break;
         default:
             $apiresults['ERROR'][] = array('MESSAGE' => 'Invalid Action');
     }
@@ -140,10 +165,6 @@ function validateAuth($username, $apiKey)
     else return (false);
 }
 
-function validateCredits($username, $credit)
-{
-    return true;
-}
 
 function post_request($url, $data)
 {

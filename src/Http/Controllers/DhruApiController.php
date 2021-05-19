@@ -8,11 +8,22 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use TFMSoftware\DhruFusion\Models\DhruFusion;
 use App\Helper\Option\OptionHelperFacades as opt;
+use App\Http\Controllers\Admin\Api\OrdersController;
+use App\Http\Controllers\Admin\Api\LicenseController;
+use App\Models\Order;
 
 class DhruApiController extends Controller
 {
 
     public $site_url = "http://test.ahmedshuaib.com";
+    public $orders;
+    public $license;
+
+    public function __construct()
+    {
+        $this->license = new LicenseController;
+        $this->orders = new OrdersController($this->license);
+    }
 
     public function dhru_login(Request $request)
     {
@@ -66,15 +77,42 @@ class DhruApiController extends Controller
 
     public function license_order(Request $request)
     {
+        $this->dhru_login($request);
+
+
+        $this->authorize('order_create'); //permission check
+
+        $resp = $this->orders->store($request);
+
+        return $resp;
+    }
+
+    public function order_show(Request $request)
+    {
+
+        $this->dhru_login($request);
 
         $request->validate([
-            'package_id' => 'required',
-            'email' => 'required'
+            'order_id' => 'required'
         ]);
 
-        $request->is_active = true;
+        $order = Order::findorfail($request->order_id);
 
-        $user = User::where('email', $request->email)->firstorfail();
+        //check auth id to order id
+        if ($order->order_uid == auth()->id()) {
+            return response()->json([
+                'status' => true,
+                'order_id' => $order->id,
+                'code' => 4,
+                'msg' => 'Order completed successfully!',
+            ], 200);
+        }
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Order not found / Order admin is other person',
+            'code' => 3,
+        ]);
     }
 
     public function credit_order(Request $request)

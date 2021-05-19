@@ -19,4 +19,5 @@ Route::namespace(Controllers::class)->prefix('system/api/dhru')
     Route::post('account', 'DhruApiController@account_info');
     Route::post('uid', 'DhruApiController@email_to_id');
     Route::post('order_license', 'DhruApiController@license_order');
+    Route::post('order', 'DhruApiController@order_show');
 });
