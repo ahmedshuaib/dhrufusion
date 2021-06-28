@@ -11,13 +11,14 @@ Route::namespace(Controllers::class)->prefix('admin')
 
 
 Route::namespace(Controllers::class)->middleware(['api'])->prefix('system/api')->group(function () {
-    Route::post('dhru/login',  'DhruApiController@dhru_login');
+    Route::post('dhru/login',  'DhruApiController@dhru_login')->name('dhru.login');
 });
 
 Route::namespace(Controllers::class)->prefix('system/api/dhru')
 ->middleware(['api'])->group(function () {
-    Route::post('account', 'DhruApiController@account_info');
-    Route::post('uid', 'DhruApiController@email_to_id');
-    Route::post('order_license', 'DhruApiController@license_order');
-    Route::post('order', 'DhruApiController@order_show');
+    Route::post('account', 'DhruApiController@account_info')->name('dhru.account.info');
+    Route::post('uid', 'DhruApiController@email_to_id')->name('dhru.email-to.id');
+    Route::post('order-license', 'DhruApiController@license_order')->name('dhru.order-license');
+    Route::post('order-credit', 'DhruApiController@credit_order')->name('dhru.order.credit');
+    Route::post('order', 'DhruApiController@order_show')->name('dhru.order.show');
 });

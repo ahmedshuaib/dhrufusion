@@ -22,7 +22,7 @@ class ApiKeyController extends Controller
      */
     public function index()
     {
-        $infos = DhruFusion::with('user');
+        $infos = auth()->user()->is_admin ? DhruFusion::with('user') : DhruFusion::where('user_id', auth()->user()->id);
         return datatables()->eloquent($infos)->setTransformer(function($infos) {
             return [
                 'api_id' => $infos->id,

@@ -10,19 +10,23 @@ use TFMSoftware\DhruFusion\Models\DhruFusion;
 use App\Helper\Option\OptionHelperFacades as opt;
 use App\Http\Controllers\Admin\Api\OrdersController;
 use App\Http\Controllers\Admin\Api\LicenseController;
+use App\Http\Controllers\Admin\Api\TransfersController;
 use App\Models\Order;
+use App\Transfer;
 
 class DhruApiController extends Controller
 {
 
     public $site_url = "http://test.ahmedshuaib.com";
     public $orders;
+    public $credit;
     public $license;
 
     public function __construct()
     {
         $this->license = new LicenseController;
         $this->orders = new OrdersController($this->license);
+        $this->credit = new TransfersController;
     }
 
     public function dhru_login(Request $request)
@@ -54,7 +58,6 @@ class DhruApiController extends Controller
     {
 
         $this->dhru_login($request);
-
 
         return response()->json([
             'account' => [
@@ -89,15 +92,22 @@ class DhruApiController extends Controller
 
     public function order_show(Request $request)
     {
-
         $this->dhru_login($request);
 
         $request->validate([
             'order_id' => 'required'
         ]);
 
-        $order = Order::findorfail($request->order_id);
+        $order = Order::find($request->order_id);
 
+        if($order != null) {
+            return $this->get_license_order($order);
+        }
+
+        return $this->get_credit_order($request->order_id);
+    }
+
+    public function get_license_order($order) {
         //check auth id to order id
         if ($order->order_uid == auth()->id()) {
             return response()->json([
@@ -115,12 +125,39 @@ class DhruApiController extends Controller
         ]);
     }
 
+    public function get_credit_order($order_id) {
+
+        $order = Transfer::find($order_id);
+
+        if($order != null) {
+            return response()->json([
+                'status' => true,
+                'msg' => $order->amount . ' Successfullly added!',
+                'code' => 4,
+                'order_id' => $order->id
+            ]);
+        }
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Order not found!',
+            'code' => 3
+        ]);
+
+    }
+
     public function credit_order(Request $request)
     {
-
         $request->validate([
             'amount' => 'required',
             'email' => 'required'
         ]);
+
+        $this->authorize('transfer_control');
+
+        $resp = $this->credit->store($request);
+
+        return $resp;
     }
+
 }

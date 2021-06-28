@@ -13,7 +13,7 @@ foreach ($_POST as $k => $v) {
     ${$k} = filter_var($v, FILTER_SANITIZE_STRING);
 }
 
-$site_url = "http://test.ahmedshuaib.com";
+$site_url = "https://tfmtool.com";
 
 $apiresults = array();
 if ($parameters) {
@@ -25,6 +25,7 @@ if ($parameters) {
 $xml_array = simplexml_load_string($_POST['parameters']); //FIRST LOAD XML
 $json_enc = json_encode($xml_array); //CONVERT TO JSON
 $tfm_param = json_decode($json_enc, true); //DECODE JSON
+
 
 if ($User = validateAuth($username, $apiaccesskey)) {
 
@@ -54,6 +55,7 @@ if ($User = validateAuth($username, $apiaccesskey)) {
             $ServiceList[$Group]['GROUPTYPE'] = 'SERVER'; // IMEI OR SERVER OR REMOTE
 
             foreach ($resp as $key => $val) {
+
                 $SERVICEID = $val['id'];
                 $ServiceList[$Group]['GROUPTYPE'] = 'SERVER';  //IMEI OR SERVER
                 $ServiceList[$Group]['SERVICES'][$SERVICEID]['SERVICEID'] = $SERVICEID;
@@ -63,12 +65,6 @@ if ($User = validateAuth($username, $apiaccesskey)) {
                 $ServiceList[$Group]['SERVICES'][$SERVICEID]['INFO'] = utf8_encode($val['package_description']);
                 $ServiceList[$Group]['SERVICES'][$SERVICEID]['TIME'] = 'Instant';
 
-                /*QNT*/
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['QNT'] = 1;
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['QNTOPTIONS'] = '1';
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['MINQNT'] = '1'; /* QNTOPTIONS OR MIN/MAX QNT*/
-                $ServiceList[$Group]['SERVICES'][$SERVICEID]['MAXQNT'] = '1';
-
                 /*Custom Fields*/
                 $CUSTOM = array(); {
                     $CUSTOM[0]['type'] = 'serviceimei';
@@ -76,71 +72,58 @@ if ($User = validateAuth($username, $apiaccesskey)) {
                     $CUSTOM[0]['fieldtype'] = 'text'; /* text dropdown radio textarea tickbox datepicker time */
                     $CUSTOM[0]['description'] = '';
                     $CUSTOM[0]['fieldoptions'] = '';
-                    $CUSTOM[0]['required'] = 1;
+                    $CUSTOM[0]['required'] = 'on';
                 }
+
                 $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.Custom'] = $CUSTOM;
             }
+
+            // //custom package for credit service
+            {
+                $SERVICEID = 7878;
+                $ServiceList[$Group]['GROUPTYPE'] = 'SERVER';  //IMEI OR SERVER
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['SERVICEID'] = $SERVICEID;
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['SERVICETYPE'] = 'SERVER'; // IMEI OR SERVER OR REMOTE
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['SERVICENAME'] = 'TFM Tool Credit Service Final Test';
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['CREDIT'] = 1.0;
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['INFO'] = utf8_encode('Buy tfm tool credit instant service');
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['TIME'] = 'Instant';
+
+
+
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['QNT'] = 1;
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['QNTOPTIONS'] = '';
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['MINQNT'] = '5'; /* QNTOPTIONS OR MIN/MAX QNT*/
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['MAXQNT'] = '';
+
+                /*Custom Fields*/
+                $CUSTOM_ = array(); {
+
+
+                    $CUSTOM_[0]['type'] = 'serviceimei';
+                    $CUSTOM_[0]['fieldname'] = 'email';
+                    $CUSTOM_[0]['fieldtype'] = 'text'; /* text dropdown radio textarea tickbox datepicker time */
+                    $CUSTOM_[0]['description'] = 'Enter your email';
+                    //$CUSTOM[0]['fieldoptions'] = '';
+                    $CUSTOM_[0]['required'] = 'on';
+                }
+                $ServiceList[$Group]['SERVICES'][$SERVICEID]['Requires.Custom'] = $CUSTOM_;
+            }
+
 
             $apiresults['SUCCESS'][] = array('MESSAGE' => 'IMEI Service List', 'LIST' => $ServiceList);
             break;
 
         case "placeimeiorder":
-
-            $ServiceId = $tfm_param['ID']; //SERVICE ID
-            $CustomField = json_decode(base64_decode($tfm_param['CUSTOMFIELD']), true); //CUSTOMFIELD
-
-            $field = array(
-                'email' => $CustomField['email']
-            );
-
-            $resp = post_request($site_url . '/system/api/dhru/uid', $field);
-
-            $resp = json_decode($resp, true);
-
-            $field = array(
-                'user_id' => $resp['uid'],
-                'package_id' => $ServiceId,
-                'is_active' => 1,
-            );
-
-            $field = array_merge($field, $data);
-
-            $resp = post_request($site_url . '/system/api/dhru/order_license', $field);
-
-            $resp = json_decode($resp, true);
-
-            if ($resp['status'] == true) {
-                /*  Process order and ger order reference id*/
-                $order_reff_id = $resp['refid'];
-                $apiresults['SUCCESS'][] = array('MESSAGE' => $resp['msg'], 'REFERENCEID' => $order_reff_id);
+            if ((int)$tfm_param['ID'] == 7878 || $tfm_param['ID'] == '7878') {
+                $apiresults = add_credit($tfm_param, $site_url, $data);
             } else {
-                $msg = empty($resp['message']) ? $resp['msg'] : $resp['message'];
-                $apiresults['ERROR'][] = array('MESSAGE' => $msg);
+                $apiresults = order_license($tfm_param, $site_url, $data);
             }
             break;
 
         case "getimeiorder":
-            $OrderID = $tfm_param['ID']; //order id
-
-            $field = array(
-                'order_id' => $OrderID,
-            );
-
-            $field = array_merge($data, $field);
-
-            $resp = post_request($site_url . '/system/api/dhru/order', $field);
-
-            $resp = json_decode($resp, true);
-
-            $code = 1;
-            $code = $resp['status'] == true ? $resp['code'] : 3;
-            $msg = $resp['status'] == true ? $resp['msg'] : 'Try again';
-
-            $apiresults['SUCCESS'][] = array(
-                'STATUS' => $code, /* 0 - New , 1 - InProcess, 3 - Reject(Refund), 4- Available(Success)  */
-                'CODE' => $msg
-            );
-
+            $apiresults = get_order_info($tfm_param, $site_url, $data);
             break;
         default:
             $apiresults['ERROR'][] = array('MESSAGE' => 'Invalid Action');
@@ -149,7 +132,129 @@ if ($User = validateAuth($username, $apiaccesskey)) {
     $apiresults['ERROR'][] = array('MESSAGE' => 'Authentication Failed');
 }
 
+//tfm_param, site_url, $data
+function order_license($tfm_param, $site_url, $data)
+{
 
+    $ServiceId = $tfm_param['ID']; //SERVICE ID
+
+    $CustomField = json_decode(base64_decode($tfm_param['CUSTOMFIELD']), true); //CUSTOMFIELD
+
+    $field = array(
+        'email' => $CustomField['email']
+    );
+
+    $resp = post_request($site_url . '/system/api/dhru/uid', $field);
+
+    $resp = json_decode($resp, true);
+
+    $field = array(
+        'user_id' => $resp['uid'],
+        'package_id' => $ServiceId,
+        'is_active' => 1,
+    );
+
+    $field = array_merge($field, $data);
+
+    $resp = post_request($site_url . '/system/api/dhru/order-license', $field);
+
+    $resp = json_decode($resp, true);
+
+    if ($resp['status'] == true) {
+        /*  Process order and ger order reference id*/
+        $order_reff_id = $resp['refid'];
+        $apiresults['SUCCESS'][] = array('MESSAGE' => $resp['msg'], 'REFERENCEID' => $order_reff_id);
+    } else {
+        $msg = empty($resp['message']) ? $resp['msg'] : $resp['message'];
+        $apiresults['ERROR'][] = array('MESSAGE' => $msg);
+    }
+
+    return $apiresults;
+}
+
+function get_order_info($tfm_param, $site_url, $data)
+{
+
+    $OrderID = $tfm_param['ID']; //order id
+
+    $field = array(
+        'order_id' => $OrderID,
+    );
+
+    $field = array_merge($data, $field);
+
+    $resp = post_request($site_url . '/system/api/dhru/order', $field);
+
+    $resp = json_decode($resp, true);
+
+    $code = 1;
+    $code = $resp['status'] == true ? $resp['code'] : 3;
+
+    $msg = $resp['status'] == true ? $resp['msg'] : get_credit_order($tfm_param, $site_url, $data);
+
+    $apiresults['SUCCESS'][] = array(
+        'STATUS' => $code, /* 0 - New , 1 - InProcess, 3 - Reject(Refund), 4- Available(Success)  */
+        'CODE' => $msg
+    );
+
+    return $apiresults;
+}
+
+
+function add_credit($tfm_param, $site_url, $data)
+{
+
+    $ServiceId = $tfm_param['ID']; //SERVICE ID
+
+    $CustomField = json_decode(base64_decode($tfm_param['CUSTOMFIELD']), true); //CUSTOMFIELD
+
+    $field = array(
+        'email' => $CustomField['email'],
+        'amount' => $tfm_param['QNT'],
+    );
+
+    $resp = post_request($site_url . '/system/api/dhru/order-credit', $field);
+
+    $resp = json_decode($resp, true);
+
+    if ($resp['status'] == true) {
+        /*  Process order and ger order reference id*/
+        $order_reff_id = $resp['refid'];
+        $apiresults['SUCCESS'][] = array('MESSAGE' => $resp['msg'], 'REFERENCEID' => $order_reff_id);
+    } else {
+        $msg = empty($resp['message']) ? $resp['msg'] : $resp['message'];
+        $apiresults['ERROR'][] = array('MESSAGE' => $msg);
+    }
+    return $apiresults;
+}
+
+function get_credit_order($tfm_param, $site_url, $data)
+{
+    $OrderID = $tfm_param['ID']; //order id
+
+    $field = array(
+        'order_id' => $OrderID,
+    );
+
+    $field = array_merge($data, $field);
+
+    $resp = post_request($site_url . '/system/api/dhru/order', $field);
+
+    $resp = json_decode($resp, true);
+
+    $code = 1;
+
+    $code = $resp['status'] == true ? $resp['code'] : 3;
+
+    $msg = $resp['status'] == true ? $resp['msg'] : 'Credit balance is not added';
+
+    $apiresults['SUCCESS'][] = array(
+        'STATUS' => $code, /* 0 - New , 1 - InProcess, 3 - Reject(Refund), 4- Available(Success)  */
+        'CODE' => $msg
+    );
+
+    return $apiresults;
+}
 
 function validateAuth($username, $apiKey)
 {
@@ -158,7 +263,7 @@ function validateAuth($username, $apiKey)
         'key'   => $apiKey
     );
 
-    $resp = post_request('http://test.ahmedshuaib.com/system/api/dhru/login', $data);
+    $resp = post_request('https://tfmtool.com/system/api/dhru/login', $data);
 
     $result = json_decode($resp, true);
     if ($result['success']) return (true);
