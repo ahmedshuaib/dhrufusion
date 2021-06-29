@@ -239,12 +239,8 @@ function get_credit_order($tfm_param, $site_url, $data)
 {
     preg_match_all('!\d+!', $tfm_param['ID'], $OrderID);;
 
-    $m_file = fopen('param.txt', 'a');
-    fwrite($m_file, $tfm_param . '\n');
-    fclose($m_file);
-
     $field = array(
-        'order_id' => $OrderID,
+        'order_id' => $OrderID[0][0],
     );
 
     $field = array_merge($data, $field);
