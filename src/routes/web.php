@@ -20,5 +20,7 @@ Route::namespace(Controllers::class)->prefix('system/api/dhru')
     Route::post('uid', 'DhruApiController@email_to_id')->name('dhru.email-to.id');
     Route::post('order-license', 'DhruApiController@license_order')->name('dhru.order-license');
     Route::post('order-credit', 'DhruApiController@credit_order')->name('dhru.order.credit');
-    Route::post('order', 'DhruApiController@order_show')->name('dhru.order.show');
+
+    Route::post('get-order', 'DhruApiController@order_show')->name('dhru.order.show');
+    Route::post('get-credit-order', 'DhruApiController@get_credit_order')->name('dhru.credit.show');
 });

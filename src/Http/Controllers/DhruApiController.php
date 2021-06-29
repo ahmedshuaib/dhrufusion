@@ -82,7 +82,6 @@ class DhruApiController extends Controller
     {
         $this->dhru_login($request);
 
-
         $this->authorize('order_create'); //permission check
 
         $resp = $this->orders->store($request);
@@ -98,13 +97,9 @@ class DhruApiController extends Controller
             'order_id' => 'required'
         ]);
 
-        $order = Order::find($request->order_id);
+        $order = Order::findorfail($request->order_id);
 
-        if($order != null) {
-            return $this->get_license_order($order);
-        }
-
-        return $this->get_credit_order($request->order_id);
+        return $this->get_license_order($order);
     }
 
     public function get_license_order($order) {
@@ -125,29 +120,28 @@ class DhruApiController extends Controller
         ]);
     }
 
-    public function get_credit_order($order_id) {
+    public function get_credit_order(Request $request) {
 
-        $order = Transfer::find($order_id);
+        $this->dhru_login($request);
 
-        if($order != null) {
-            return response()->json([
-                'status' => true,
-                'msg' => $order->amount . ' Successfullly added!',
-                'code' => 4,
-                'order_id' => $order->id
-            ]);
-        }
+        $request->validate([
+            'order_id' => 'required'
+        ]);
+
+        $order = $this->credit->show($request->order_id);
 
         return response()->json([
             'status' => true,
-            'msg' => 'Order not found!',
-            'code' => 3
+            'msg' => round($order->amount) . ' Credit successfullly added!',
+            'code' => 4,
+            'order_id' => $order->id
         ]);
-
     }
 
     public function credit_order(Request $request)
     {
+        $this->dhru_login($request);
+
         $request->validate([
             'amount' => 'required',
             'email' => 'required'

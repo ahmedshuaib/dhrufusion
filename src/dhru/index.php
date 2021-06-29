@@ -123,7 +123,12 @@ if ($User = validateAuth($username, $apiaccesskey)) {
             break;
 
         case "getimeiorder":
-            $apiresults = get_order_info($tfm_param, $site_url, $data);
+            if(strpos($tfm_param['ID'], 'CREDIT') !== false) {
+                $apiresults = get_credit_order($tfm_param, $site_url, $data);
+            }
+            else {
+                $apiresults = get_order_info($tfm_param, $site_url, $data);
+            }
             break;
         default:
             $apiresults['ERROR'][] = array('MESSAGE' => 'Invalid Action');
@@ -183,14 +188,14 @@ function get_order_info($tfm_param, $site_url, $data)
 
     $field = array_merge($data, $field);
 
-    $resp = post_request($site_url . '/system/api/dhru/order', $field);
+    $resp = post_request($site_url . '/system/api/dhru/get-order', $field);
 
     $resp = json_decode($resp, true);
 
     $code = 1;
     $code = $resp['status'] == true ? $resp['code'] : 3;
 
-    $msg = $resp['status'] == true ? $resp['msg'] : get_credit_order($tfm_param, $site_url, $data);
+    $msg = $resp['status'] == true ? $resp['msg'] : "Try Again Something wen't wrong";
 
     $apiresults['SUCCESS'][] = array(
         'STATUS' => $code, /* 0 - New , 1 - InProcess, 3 - Reject(Refund), 4- Available(Success)  */
@@ -213,6 +218,8 @@ function add_credit($tfm_param, $site_url, $data)
         'amount' => $tfm_param['QNT'],
     );
 
+    $field = array_merge($field, $data);
+
     $resp = post_request($site_url . '/system/api/dhru/order-credit', $field);
 
     $resp = json_decode($resp, true);
@@ -220,7 +227,7 @@ function add_credit($tfm_param, $site_url, $data)
     if ($resp['status'] == true) {
         /*  Process order and ger order reference id*/
         $order_reff_id = $resp['refid'];
-        $apiresults['SUCCESS'][] = array('MESSAGE' => $resp['msg'], 'REFERENCEID' => $order_reff_id);
+        $apiresults['SUCCESS'][] = array('MESSAGE' => $resp['msg'], 'REFERENCEID' => $order_reff_id . ' - CREDIT');
     } else {
         $msg = empty($resp['message']) ? $resp['msg'] : $resp['message'];
         $apiresults['ERROR'][] = array('MESSAGE' => $msg);
@@ -230,7 +237,11 @@ function add_credit($tfm_param, $site_url, $data)
 
 function get_credit_order($tfm_param, $site_url, $data)
 {
-    $OrderID = $tfm_param['ID']; //order id
+    preg_match_all('!\d+!', $tfm_param['ID'], $OrderID);;
+
+    $m_file = fopen('param.txt', 'a');
+    fwrite($m_file, $tfm_param . '\n');
+    fclose($m_file);
 
     $field = array(
         'order_id' => $OrderID,
@@ -238,7 +249,7 @@ function get_credit_order($tfm_param, $site_url, $data)
 
     $field = array_merge($data, $field);
 
-    $resp = post_request($site_url . '/system/api/dhru/order', $field);
+    $resp = post_request($site_url . '/system/api/dhru/get-credit-order', $field);
 
     $resp = json_decode($resp, true);
 
@@ -246,7 +257,7 @@ function get_credit_order($tfm_param, $site_url, $data)
 
     $code = $resp['status'] == true ? $resp['code'] : 3;
 
-    $msg = $resp['status'] == true ? $resp['msg'] : 'Credit balance is not added';
+    $msg = $resp['status'] == true ? $resp['msg'] : "Try again something wen't wrong:credit err";
 
     $apiresults['SUCCESS'][] = array(
         'STATUS' => $code, /* 0 - New , 1 - InProcess, 3 - Reject(Refund), 4- Available(Success)  */
