@@ -17,7 +17,7 @@ use App\Transfer;
 class DhruApiController extends Controller
 {
 
-    public $site_url = "http://test.ahmedshuaib.com";
+    public $site_url = "https://tfmtool.com";
     public $orders;
     public $credit;
     public $license;
