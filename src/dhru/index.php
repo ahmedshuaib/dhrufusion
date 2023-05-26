@@ -150,8 +150,13 @@ function order_license($tfm_param, $site_url, $data)
     );
 
     $resp = post_request($site_url . '/system/api/dhru/uid', $field);
-
     $resp = json_decode($resp, true);
+	
+	if(!empty($resp['message'])) {
+		$msg = empty($resp['message']) ? $resp['message'] : $resp['message'];
+        $apiresults['ERROR'][] = array('MESSAGE' => $msg);
+		return $apiresults;
+	}
 
     $field = array(
         'user_id' => $resp['uid'],
@@ -168,9 +173,9 @@ function order_license($tfm_param, $site_url, $data)
     if ($resp['status'] == true) {
         /*  Process order and ger order reference id*/
         $order_reff_id = $resp['refid'];
-        $apiresults['SUCCESS'][] = array('MESSAGE' => $resp['msg'], 'REFERENCEID' => $order_reff_id);
+        $apiresults['SUCCESS'][] = array('MESSAGE' => $resp['message'], 'REFERENCEID' => $order_reff_id);
     } else {
-        $msg = empty($resp['message']) ? $resp['msg'] : $resp['message'];
+        $msg = empty($resp['message']) ? $resp['message'] : $resp['message'];
         $apiresults['ERROR'][] = array('MESSAGE' => $msg);
     }
 
@@ -189,13 +194,13 @@ function get_order_info($tfm_param, $site_url, $data)
     $field = array_merge($data, $field);
 
     $resp = post_request($site_url . '/system/api/dhru/get-order', $field);
-
     $resp = json_decode($resp, true);
 
-    $code = 1;
-    $code = $resp['status'] == true ? $resp['code'] : 3;
 
-    $msg = $resp['status'] == true ? $resp['msg'] : "Try Again Something wen't wrong";
+    $code = 1;
+	
+    $code = $resp['code'];
+    $msg = $resp['message'];
 
     $apiresults['SUCCESS'][] = array(
         'STATUS' => $code, /* 0 - New , 1 - InProcess, 3 - Reject(Refund), 4- Available(Success)  */
@@ -227,9 +232,9 @@ function add_credit($tfm_param, $site_url, $data)
     if ($resp['status'] == true) {
         /*  Process order and ger order reference id*/
         $order_reff_id = $resp['refid'];
-        $apiresults['SUCCESS'][] = array('MESSAGE' => $resp['msg'], 'REFERENCEID' => $order_reff_id . ' - CREDIT');
+        $apiresults['SUCCESS'][] = array('MESSAGE' => $resp['message'], 'REFERENCEID' => $order_reff_id . ' - CREDIT');
     } else {
-        $msg = empty($resp['message']) ? $resp['msg'] : $resp['message'];
+        $msg = empty($resp['message']) ? $resp['message'] : $resp['message'];
         $apiresults['ERROR'][] = array('MESSAGE' => $msg);
     }
     return $apiresults;
@@ -253,7 +258,7 @@ function get_credit_order($tfm_param, $site_url, $data)
 
     $code = $resp['status'] == true ? $resp['code'] : 3;
 
-    $msg = $resp['status'] == true ? $resp['msg'] : "Try again something wen't wrong:credit err";
+    $msg = $resp['status'] == true ? $resp['message'] : "Try again something wen't wrong:credit err";
 
     $apiresults['SUCCESS'][] = array(
         'STATUS' => $code, /* 0 - New , 1 - InProcess, 3 - Reject(Refund), 4- Available(Success)  */

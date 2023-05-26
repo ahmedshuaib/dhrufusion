@@ -109,13 +109,13 @@ class DhruApiController extends Controller
                 'status' => true,
                 'order_id' => $order->id,
                 'code' => 4,
-                'msg' => 'Order completed successfully!',
+                'message' => 'Order completed successfully!',
             ], 200);
         }
 
         return response()->json([
             'status' => true,
-            'msg' => 'Order not found / Order admin is other person',
+            'message' => 'Order not found / Order admin is other person',
             'code' => 3,
         ]);
     }
@@ -132,7 +132,7 @@ class DhruApiController extends Controller
 
         return response()->json([
             'status' => true,
-            'msg' => round($order->amount) . ' Credit successfullly added!',
+            'message' => round($order->amount) . ' Credit successfullly added!',
             'code' => 4,
             'order_id' => $order->id
         ]);
