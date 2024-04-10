@@ -30,7 +30,9 @@ function post_request($url, $data)
     }
 }
 
-$response = post_request("https://ultimatefrp.eu/api/dhru", json_encode($_POST));
+$site_url = "https://" . $_SERVER['SERVER_NAME'] . "/api/dhru";
+
+$response = post_request($site_url, json_encode($_POST));
 
 header('Content-Type: application/json; charset=utf-8');
 header_remove('pragma');
