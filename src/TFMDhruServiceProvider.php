@@ -29,9 +29,9 @@ class TFMDhruServiceProvider extends ServiceProvider
         $router->aliasMiddleware('dhru.auth', \TFMSoftware\DhruFusion\Http\Middleware\DhruAuth::class);
         $this->publishes([
             __DIR__ . '/dhru/index.php' => 'public/api/index.php',
-            __DIR__ . '/Http/DhruController.php' => 'Dhru/Controllers/DhruController.php',
+            __DIR__ . '/Http/Controllers/DhruController.php' => 'Dhru/Controllers/DhruController.php',
             __DIR__ . '/Models' => 'Dhru/Models',
-        ]);
+        ], 'dhru-fusion');
     }
 }
 
