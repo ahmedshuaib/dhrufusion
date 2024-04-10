@@ -156,8 +156,10 @@ class DhruController extends Controller
 
     private function placeimeiorder($parameters) {
         if($parameters->ID == 7878) {
+            $this->authorize('transfer_control');
             return $this->placeCreditOrder($parameters);
         }
+        $this->authorize('order_create'); //permission check
         return $this->placeLicenseOrder($parameters);
     }
 
