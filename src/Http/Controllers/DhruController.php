@@ -177,7 +177,7 @@ class DhruController extends Controller
         $handler = $this->credit->creditTransfer(new Request($form_data));
         $response = $handler->original;
         if($handler->isOk() && $response['status'] == true) {
-            return $this->response->successResponse(['MESSAGE' => 'Credit added successfully', 'REFERENCEID' => $response['refid']]);
+            return $this->response->successResponse(['MESSAGE' => 'Credit added successfully', 'REFERENCEID' => $response['refid'] . ' - CREDIT']);
         }
         return $this->response->errorResponse(empty($response['message']) ? 'Credit not added' : $response['message']);
     }

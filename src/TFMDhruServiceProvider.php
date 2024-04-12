@@ -31,6 +31,8 @@ class TFMDhruServiceProvider extends ServiceProvider
             __DIR__ . '/dhru/index.php' => 'public/api/index.php',
             __DIR__ . '/Http/Controllers/DhruController.php' => 'Dhru/Controllers/DhruController.php',
             __DIR__ . '/Models' => 'Dhru/Models',
+            // __DIR__ . '/Http/Controllers/DhruController.php' => app_path('Http/Controllers/Dhru/DhruController.php'),
+            // __DIR__ . '/Models' => app_path('Models/Dhru'),
         ], 'dhru-fusion');
     }
 }
