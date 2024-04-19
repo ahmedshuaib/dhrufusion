@@ -159,6 +159,7 @@ class DhruController extends Controller
             $this->authorize('transfer_control');
             return $this->placeCreditOrder($parameters);
         }
+        request()->merge(['package_id' => $parameters->ID]);
         $this->authorize('order_create'); //permission check
         return $this->placeLicenseOrder($parameters);
     }
